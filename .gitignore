@@ -1,0 +1,6 @@
+sukses.txt
+__pycache__/
+*.pyc
+failed.json
+accounts.json
+accounts.txt
