@@ -1,9 +1,15 @@
 # Account & Token Files (SENSITIVE!)
 akun_kimi.txt
+akun_kimi_backup.txt
 sukses.txt
 *.env
 .env.local
 credentials.json
+
+# Old/Backup Files
+main_old_*.py
+*_backup.py
+*_old.py
 
 # Python
 __pycache__/

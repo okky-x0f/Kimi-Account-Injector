@@ -1,4 +1,3 @@
 camoufox==0.4.11
 colorama==0.4.6
 fake-useragent==2.2.0
-playwright==1.60.0
