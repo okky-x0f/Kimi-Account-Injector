@@ -51,7 +51,7 @@ def print_banner():
     """Print banner"""
     banner = f"""
 {Fore.CYAN}+--------------------------------------------------+
-|    Kimi Auto Injector - Full Automation        |
+|  Kimi Auto Injector - Full Automation        |
 |    (Login → Extract → Inject to 9Router)       |
 +--------------------------------------------------+
 | GitHub : https://github.com/okky-x0f           |
