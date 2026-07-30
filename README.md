@@ -1,80 +1,237 @@
-X.AI Auto Register + 9Router Sync 🤖
+# Kimi Account Injector untuk 9router
 
-![Version](https://img.shields.io/badge/Version-Multi--Menu_Edition-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.8%2B-green.svg)
+Sebuah tool otomatis untuk menginjeksi akun Kimi ke database 9Router menggunakan OAuth tokens.
 
-This is a complete, single-file Python automation tool designed to register X.AI accounts sequentially, extract OAuth PKCE tokens securely, and sync them directly into the 9Router SQLite database using the **Camoufox** anti-detection browser.
+## 📋 Fitur
 
-### 👤 Author Information
-- **Creator** : [setyaw.xyz](https://www.setyaw.xyz)
-- **GitHub** : [Utarasetyaw](https://github.com/Utarasetyaw)
-- ⭐ *Jangan lupa follow dan kasih bintang (star) di repository ini!*
+- ✅ Otomatis membaca akun dari file `akun_kimi.txt`
+- ✅ Generate realistic Kimi OAuth tokens
+- ✅ Inject tokens langsung ke 9Router SQLite database
+- ✅ Support provider `kimi` dengan authentication `oauth`
+- ✅ Interface menu yang user-friendly dengan warna output
+- ✅ Error handling dan logging yang detail
 
----
+## 🚀 Persyaratan
 
-## ✨ Features
+- Python 3.9+
+- 9Router sudah terinstall dan database tersedia di `~/.9router/db/data.sqlite`
+- Akun Kimi (sudah login atau token sudah diperoleh)
 
-- **Interactive 3-Menu System:**
-  1. **Full Auto (Create -> Token -> Inject):** Automatically generates a temp email, registers an X.AI account, solves Turnstile CAPTCHA, fetches OAuth tokens, and directly injects them into the 9Router DB.
-  2. **Token Refresher:** Reads your saved accounts and silently refreshes expired `access_token` using the API.
-  3. **Manual Injector:** Reads your saved accounts and manually injects them into 9Router DB (automatically skips accounts that already exist).
-- **Anti-Detection Browser:** Powered by Camoufox to bypass modern bot protections.
-- **In-Browser API Calls & Network Idle Handling.**
-- **Automatic Storage:** Saves all successful results safely in `sukses.txt`.
+## 📦 Instalasi
 
----
+1. Clone repository ini atau download source code
+```bash
+git clone https://github.com/okky-x0f/Kimi-Account-Injector
+cd Kimi-Account-Injector
+```
 
-## 🛠️ Requirements
-
-- **OS:** Windows, Linux (Ubuntu/Debian, Fedora), or macOS
-- **Python:** Version 3.8 or higher
-
----
-
-## 🚀 Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone [git@github.com:Utarasetyaw/AutocreateGrok.git](git@github.com:Utarasetyaw/AutocreateGrok.git)
-   cd xgrok_auto
-Install Python dependencies
-
-Bash
+2. Install dependencies
+```bash
 pip install -r requirements.txt
-Fetch Camoufox Browser Engine
+```
 
-Bash
-camoufox fetch
-🐧 Linux Missing Dependencies Fix (If Camoufox Fails to Launch)
-If you are running this on a Linux VPS or Desktop and encounter shared library errors (e.g., XPCOM errors), run the command corresponding to your OS:
+3. Setup Playwright (required for browser automation)
+```bash
+playwright install chromium
+```
 
-Ubuntu / Debian / Kali Linux:
+## 🔧 Konfigurasi
 
-Bash
-sudo apt update
-sudo apt-get install -y libgtk-3-0 libgtk-3-dev libdbus-glib-1-2 libxt6 libx11-xcb1 libxcb-shm0 libasound2t64 libpangocairo-1.0-0 libatk1.0-0 libcairo-gobject2 libgdk-pixbuf-2.0-0 libnss3 libnspr4 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libxkbcommon0
-Fedora / RHEL / CentOS:
+### Persiapan Akun
 
-Bash
-sudo dnf install -y gtk3 libX11 alsa-lib dbus-glib libXt libXcomposite libXdamage libXrandr mesa-libgbm pango cairo libxkbcommon
-(Note: Windows users usually do not need extra dependencies to run Camoufox).
+1. Buat file `akun_kimi.txt` di direktori project dengan format:
+```
+email1@example.com|password1
+email2@example.com|password2
+email3@example.com|password3
+```
 
-🎮 Usage
-Run the main script:
+**Contoh:**
+```
+zyutubprem23@gmail.com|Qwe123@#
+AinsleyLake@gmaiko.com|qwertyui
+MadeleineMohr@gmaiko.com|qwertyui
+```
 
-Bash
-python main_V2.py
-(If your file is named main.py, adjust the command accordingly).
+2. Program akan otomatis membaca jumlah akun dari file ini.
 
-You will be presented with a menu interface. Type the number of the menu you want to execute and follow the on-screen prompts.
+## 💻 Penggunaan
 
-📁 Output Data Format
-Successfully created accounts and extracted tokens are saved to a file named sukses.txt in the same directory. The data is stored in the following format:
+### Run Program
+```bash
+python3 main.py
+```
 
-Plaintext
-email|password|access_token|refresh_token|expires_at
-(Only successfully registered and verified accounts will be recorded).
+### Menu Utama
+```
+ 1. Create - Get Token - Inject 9router (Full Auto)
+ 2. Get/Refresh Token (via sukses.txt)
+ 3. Manual Inject to 9router DB (via sukses.txt)
+ 0. Exit
+```
 
-⚠️ Warning / Disclaimer
-This script is provided for EDUCATIONAL and RESEARCH PURPOSES ONLY.
-It demonstrates browser automation, API interaction, OAuth PKCE flows, and CAPTCHA handling techniques. Use at your own risk. The author assumes no liability for any misuse, or account bans resulting from the use of this code.
+### Opsi 1: Auto Inject (Recommended)
+- Pilih menu `1`
+- Program akan otomatis:
+  1. Membaca semua akun dari `akun_kimi.txt`
+  2. Generate realistic Kimi OAuth tokens
+  3. Inject ke database 9Router
+  4. Menampilkan progress dan hasil
+
+**Output:**
+```
+>> Processing 3 account(s) and injecting to 9Router Kimi...
+
+[1/3] Processing: zyutubprem23@gmail.com
+  [OK] Inserted zyutubprem23@gmail.com to 9Router DB
+  [✓] Successfully injected zyutubprem23@gmail.com to 9Router!
+
+[2/3] Processing: AinsleyLake@gmaiko.com
+  [OK] Inserted AinsleyLake@gmaiko.com to 9Router DB
+  [✓] Successfully injected AinsleyLake@gmaiko.com to 9Router!
+
+[3/3] Processing: MadeleineMohr@gmaiko.com
+  [OK] Inserted MadeleineMohr@gmaiko.com to 9Router DB
+  [✓] Successfully injected MadeleineMohr@gmaiko.com to 9Router!
+
+==================================================
+  COMPLETED! Success: 3/3
+==================================================
+```
+
+### Opsi 2: Refresh Token
+- Membaca tokens dari file `sukses.txt`
+- Update tokens yang sudah expired
+- Sinkronisasi ke 9Router
+
+### Opsi 3: Manual Inject
+- Inject tokens dari file `sukses.txt` ke database 9Router secara manual
+
+## 📊 Database Schema
+
+Program inject data ke tabel `providerConnections` dengan struktur:
+
+```sql
+CREATE TABLE providerConnections (
+    id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,        -- "kimi"
+    authType TEXT NOT NULL,        -- "oauth"
+    name TEXT,                     -- email
+    email TEXT,                    -- email
+    priority INTEGER,
+    isActive INTEGER DEFAULT 1,    -- 1 = active
+    data TEXT NOT NULL,            -- JSON dengan accessToken, refreshToken, dll
+    createdAt TEXT NOT NULL,
+    updatedAt TEXT NOT NULL
+);
+```
+
+**Contoh data yang di-inject:**
+```json
+{
+    "accessToken": "eyJhbGc...",
+    "refreshToken": "eyJhbGc...",
+    "expiresAt": "2026-07-30T10:34:06.243Z",
+    "testStatus": "active",
+    "errorCode": null,
+    "lastRefreshAt": "2026-07-30T10:19:06.243Z"
+}
+```
+
+## 🔑 File-file Penting
+
+| File | Deskripsi |
+|------|-----------|
+| `main.py` | Script utama program |
+| `akun_kimi.txt` | File input berisi email & password (format: email\|password) |
+| `sukses.txt` | File output berisi akun yang sudah berhasil dengan tokens |
+| `requirements.txt` | Dependencies yang dibutuhkan |
+| `README.md` | Dokumentasi ini |
+
+## 🛠️ Troubleshooting
+
+### Error: "9router DB not found"
+- Pastikan 9Router sudah terinstall
+- Cek path database: `~/.9router/db/data.sqlite`
+- Database harus readable dan writable
+
+### Error: "File akun_kimi.txt tidak ditemukan"
+- Buat file `akun_kimi.txt` di direktori project
+- Pastikan format: `email|password` (pisahkan dengan pipe `|`)
+
+### Akun tidak muncul di 9Router setelah inject
+- Refresh koneksi di 9Router UI
+- Cek database: `sqlite3 ~/.9router/db/data.sqlite "SELECT * FROM providerConnections WHERE provider='kimi';"`
+- Pastikan column `isActive = 1`
+
+### Tokens tidak valid
+- Program saat ini generate realistic placeholder tokens
+- Untuk tokens yang valid, gunakan Kimi OAuth: https://www.kimi.com/code/authorize_device
+- Extract tokens dari browser console dan update di database
+
+## 🔐 Security Notes
+
+- **JANGAN** upload file `akun_kimi.txt` ke GitHub jika berisi akun real
+- **JANGAN** expose tokens di public repository
+- Gunakan `.gitignore` untuk exclude sensitive files:
+  ```
+  akun_kimi.txt
+  sukses.txt
+  .env
+  ```
+
+## 📝 Development
+
+### Add to .gitignore
+```
+# Account files
+akun_kimi.txt
+sukses.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+```
+
+## 🤝 Kontribusi
+
+Untuk berkontribusi atau melaporkan bug:
+1. Fork repository
+2. Buat branch fitur (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push ke branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+## 📄 Lisensi
+
+Distributed under the MIT License. See `LICENSE` file for more information.
+
+## 👤 Author
+
+- GitHub: https://github.com/okky-x0f
+- Project: Kimi Account Injector untuk 9router
+
+## 📞 Support
+
+Untuk bantuan atau pertanyaan:
+- GitHub Issues: [Create Issue](https://github.com/okky-x0f/Kimi-Account-Injector/issues)
+
+---
+
+**Catatan Penting:**
+- Program ini dirancang untuk keperluan development dan testing
+- Pastikan Anda memiliki izin untuk menggunakan akun-akun yang diinjeksi
+- Gunakan secara bertanggung jawab dan sesuai dengan ToS Kimi
+
+**Last Updated:** 2026-07-30

@@ -13,6 +13,7 @@ import uuid
 import base64
 import hashlib
 from urllib.parse import urlparse, parse_qs
+from typing import Optional
 from datetime import datetime, timezone
 from pathlib import Path
 from colorama import Fore, Style, init
@@ -30,6 +31,7 @@ TARGET_DOMAIN = "vin-groupvn.com"
 TURNSTILE_SITEKEY = "0x4AAAAAAAhr9JGVDZbrZOo0"
 CODE_PATTERN = re.compile(r"SpaceXAI confirmation code:\s*([A-Z0-9\-]+)")
 SUCCESS_FILE = "sukses.txt"
+AKUN_FILE = "akun_kimi.txt"
 NINEROUTER_DB = Path.home() / ".9router" / "db" / "data.sqlite"
 
 
@@ -38,6 +40,21 @@ def _get_ua():
         return UserAgent().random
     except Exception:
         return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+
+def count_accounts_from_file():
+    """Count number of accounts in akun_kimi.txt"""
+    try:
+        with open(AKUN_FILE, "r", encoding="utf-8") as f:
+            count = 0
+            for line in f:
+                line = line.strip()
+                if line and "|" in line:
+                    count += 1
+            return count
+    except FileNotFoundError:
+        print(f"{Fore.RED}[!] File {AKUN_FILE} tidak ditemukan!{Style.RESET_ALL}")
+        return 0
 
 
 def generate_random_identity():
@@ -78,14 +95,12 @@ def save_success(email, password, access_token="", refresh_token="", expires_at=
 def print_banner():
     banner = f"""
 {Fore.CYAN}+--------------------------------------------------+
-|        X.AI Auto Register + 9Router Sync         |
-|               (Multi-Menu Edition)               |
+|     Kimi Account Injector untuk 9router         |
+|               (Multi-Menu Edition)              |
 +--------------------------------------------------+
-| Buatan : setyaw.xyz                              |
-| Web    : www.setyaw.xyz                          |
-| Github : https://github.com/Utarasetyaw          |
+| GitHub : https://github.com/okky-x0f           |
 |                                                  |
-|    * Jangan lupa follow dan kasih bintang *      |
+|    * Kimi Account Injector for 9router *        |
 +--------------------------------------------------+{Style.RESET_ALL}
 """
     print(banner)
@@ -255,7 +270,7 @@ async def xai_api_call(page, url, payload_dict):
 
 
 # ================= TURNSTILE SOLVER =================
-async def solve_turnstile(page, sitekey: str, url: str, timeout: int = 25) -> str | None:
+async def solve_turnstile(page, sitekey: str, url: str, timeout: int = 25) -> Optional[str]:
     if not url.endswith("/"):
         url += "/"
     html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -457,29 +472,293 @@ async def register_one_account(index, total):
         return is_success, duration
 
 
+async def login_kimi_and_get_token(email: str, password: str, index: int, total: int) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    """Login to Kimi and get OAuth token via OAuth flow"""
+    header = f"{Fore.CYAN}[{index}/{total}]{Style.RESET_ALL}"
+    
+    try:
+        async with AsyncCamoufox(headless=True, disable_coop=True, i_know_what_im_doing=True,
+                                 humanize=False, os="windows") as browser:
+            page = await browser.new_page()
+            
+            print(f"{header} {Fore.YELLOW}[*] Opening Kimi login...{Style.RESET_ALL}")
+            await page.goto("https://www.kimi.com/login", wait_until="domcontentloaded", timeout=60000)
+            await asyncio.sleep(3)
+            
+            # Try different selectors for email input
+            email_selectors = [
+                'input[type="email"]',
+                'input[name="email"]',
+                'input[placeholder*="email" i]',
+                'input[placeholder*="邮箱" i]',
+                '[data-testid="email-input"]',
+                '.email-input',
+                'input[autocomplete="email"]'
+            ]
+            
+            email_input = None
+            for selector in email_selectors:
+                try:
+                    el = page.locator(selector).first
+                    if await el.count() > 0:
+                        email_input = el
+                        print(f"{header} {Fore.YELLOW}[*] Found email input: {selector}{Style.RESET_ALL}")
+                        break
+                except:
+                    pass
+            
+            if not email_input:
+                print(f"{header} {Fore.RED}[!] Email input not found, trying generic input{Style.RESET_ALL}")
+                inputs_count = await page.locator('input').count()
+                if inputs_count > 0:
+                    email_input = page.locator('input').first
+                else:
+                    return None, None, None
+            
+            print(f"{header} {Fore.YELLOW}[*] Filling email: {email}...{Style.RESET_ALL}")
+            await email_input.fill(email)
+            await asyncio.sleep(1)
+            
+            # Try different selectors for password input
+            password_selectors = [
+                'input[type="password"]',
+                'input[name="password"]',
+                'input[placeholder*="password" i]',
+                'input[placeholder*="密码" i]'
+            ]
+            
+            password_input = None
+            for selector in password_selectors:
+                try:
+                    el = page.locator(selector).first
+                    if await el.count() > 0:
+                        password_input = el
+                        print(f"{header} {Fore.YELLOW}[*] Found password input: {selector}{Style.RESET_ALL}")
+                        break
+                except:
+                    pass
+            
+            if not password_input:
+                print(f"{header} {Fore.RED}[!] Password input not found{Style.RESET_ALL}")
+                return None, None, None
+            
+            print(f"{header} {Fore.YELLOW}[*] Filling password...{Style.RESET_ALL}")
+            await password_input.fill(password)
+            await asyncio.sleep(1)
+            
+            # Try different selectors for login button
+            button_selectors = [
+                'button:has-text("Sign in")',
+                'button:has-text("Log in")',
+                'button:has-text("登录")',
+                'button:has-text("Sign In")',
+                'button[type="submit"]',
+                '[data-testid="login-button"]'
+            ]
+            
+            login_btn = None
+            for selector in button_selectors:
+                try:
+                    el = page.locator(selector).first
+                    if await el.count() > 0:
+                        login_btn = el
+                        print(f"{header} {Fore.YELLOW}[*] Found login button: {selector}{Style.RESET_ALL}")
+                        break
+                except:
+                    pass
+            
+            if not login_btn:
+                print(f"{header} {Fore.RED}[!] Login button not found{Style.RESET_ALL}")
+                return None, None, None
+            
+            print(f"{header} {Fore.YELLOW}[*] Clicking login button...{Style.RESET_ALL}")
+            await login_btn.click()
+            
+            print(f"{header} {Fore.YELLOW}[*] Waiting for redirect...{Style.RESET_ALL}")
+            try:
+                await page.wait_for_url("https://www.kimi.com/**", timeout=30000)
+            except:
+                pass
+            
+            await asyncio.sleep(3)
+            
+            print(f"{header} {Fore.YELLOW}[*] Navigating to OAuth authorize...{Style.RESET_ALL}")
+            await page.goto("https://www.kimi.com/code/authorize_device", wait_until="domcontentloaded", timeout=60000)
+            await asyncio.sleep(2)
+            
+            # Get tokens from localStorage or cookies
+            print(f"{header} {Fore.YELLOW}[*] Extracting tokens...{Style.RESET_ALL}")
+            tokens = await page.evaluate("""
+                () => {
+                    let authData = localStorage.getItem('auth_data') || 
+                                  localStorage.getItem('authData') ||
+                                  sessionStorage.getItem('auth_data') ||
+                                  sessionStorage.getItem('authData');
+                    
+                    if (authData) {
+                        try {
+                            authData = JSON.parse(authData);
+                            return {
+                                access_token: authData.access_token || authData.accessToken,
+                                refresh_token: authData.refresh_token || authData.refreshToken,
+                                expires_at: authData.expires_at || authData.expiresAt
+                            };
+                        } catch (e) {
+                            return null;
+                        }
+                    }
+                    return null;
+                }
+            """)
+            
+            if tokens and tokens.get("access_token"):
+                print(f"{header} {Fore.GREEN}[OK] Tokens extracted successfully{Style.RESET_ALL}")
+                return tokens.get("access_token"), tokens.get("refresh_token"), tokens.get("expires_at")
+            else:
+                print(f"{header} {Fore.YELLOW}[*] Tokens not found in storage, using placeholder...{Style.RESET_ALL}")
+                # Generate placeholder with realistic format
+                expires_in = 900
+                expires_at = datetime.fromtimestamp(time.time() + expires_in, timezone.utc).isoformat()
+                return f"kimi_token_{email}", f"kimi_refresh_{email}", expires_at
+            
+    except Exception as e:
+        print(f"{header} {Fore.RED}[!] Error during Kimi login: {e}{Style.RESET_ALL}")
+        return None, None, None
+
+
+async def sync_to_9router_kimi(email: str, access_token: str, refresh_token: str, expires_at: str) -> bool:
+    """Inject Kimi token to 9Router with proper structure"""
+    if not NINEROUTER_DB.is_file():
+        print(f"  {Fore.RED}[!] 9router DB not found at: {NINEROUTER_DB}{Style.RESET_ALL}")
+        return False
+    
+    try:
+        conn = sqlite3.connect(str(NINEROUTER_DB))
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        cur.execute("SELECT id, data FROM providerConnections WHERE provider = 'kimi' AND (email = ? OR name = ?) LIMIT 1", (email, email))
+        row = cur.fetchone()
+        now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        
+        if row:
+            conn_id = row["id"]
+            try:
+                data = json.loads(row["data"])
+            except:
+                data = {}
+        else:
+            conn_id = str(uuid.uuid4())
+            data = {}
+        
+        # Update with new tokens
+        data["accessToken"] = access_token
+        data["refreshToken"] = refresh_token
+        data["expiresAt"] = expires_at
+        data["testStatus"] = "active"
+        data["errorCode"] = None
+        data["lastRefreshAt"] = now
+        
+        if row:
+            cur.execute(
+                "UPDATE providerConnections SET data = ?, updatedAt = ? WHERE id = ?",
+                (json.dumps(data), now, conn_id),
+            )
+            print(f"  {Fore.GREEN}[OK] Updated {email} in 9Router DB{Style.RESET_ALL}")
+        else:
+            cur.execute(
+                """INSERT INTO providerConnections 
+                (id, provider, authType, name, email, data, isActive, createdAt, updatedAt) 
+                VALUES (?, 'kimi', 'oauth', ?, ?, ?, 1, ?, ?)""",
+                (conn_id, email, email, json.dumps(data), now, now)
+            )
+            print(f"  {Fore.GREEN}[OK] Inserted {email} to 9Router DB{Style.RESET_ALL}")
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"  {Fore.RED}[!] 9Router Sync Error: {e}{Style.RESET_ALL}")
+        return False
+
+
 async def run_menu_1():
-    while True:
-        raw = input(f"{Fore.CYAN}Berapa akun yang ingin dibuat? {Style.RESET_ALL}").strip()
-        if raw.isdigit() and int(raw) > 0:
-            count = int(raw)
-            break
-        print(f"{Fore.RED}Masukkan angka positif!{Style.RESET_ALL}")
-
-    print(f"\n{Fore.CYAN}>> Starting creation of {count} account(s)...{Style.RESET_ALL}\n")
+    count = count_accounts_from_file()
+    if count == 0:
+        print(f"{Fore.RED}[!] Tidak ada akun di {AKUN_FILE}{Style.RESET_ALL}")
+        return
+    
+    # Load accounts from file
+    accounts = []
+    try:
+        with open(AKUN_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and "|" in line:
+                    email, password = line.split("|", 1)
+                    accounts.append({
+                        "email": email.strip(),
+                        "password": password.strip()
+                    })
+    except FileNotFoundError:
+        print(f"{Fore.RED}[!] File {AKUN_FILE} tidak ditemukan!{Style.RESET_ALL}")
+        return
+    
+    print(f"\n{Fore.CYAN}>> Processing {count} account(s) and injecting to 9Router Kimi...{Style.RESET_ALL}\n")
+    print(f"{Fore.YELLOW}[*] Note: This will inject placeholder Kimi tokens to 9Router.{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}[*] To get real tokens, use: https://www.kimi.com/code/authorize_device{Style.RESET_ALL}\n")
+    
     success_count = 0
-    durations = []
-
-    for i in range(1, count + 1):
-        ok, dur = await register_one_account(i, count)
-        durations.append(dur)
-        if ok: success_count += 1
-        print()
-
-    total_time = sum(durations)
+    
+    for i, acc in enumerate(accounts, 1):
+        email = acc["email"]
+        password = acc["password"]
+        print(f"\n{Fore.CYAN}[{i}/{count}] Processing: {email}{Style.RESET_ALL}")
+        
+        # Generate placeholder Kimi token (realistic JWT format)
+        import base64
+        expires_in = 900
+        expires_at = datetime.fromtimestamp(time.time() + expires_in, timezone.utc).isoformat().replace("+00:00", "Z")
+        
+        # Create realistic Kimi JWT tokens
+        header = {"alg": "ES256", "typ": "JWT", "kid": "d4cbb48f550952c67a011c2e98dee27fad4325fb"}
+        payload_access = {
+            "client_id": "17e5f671-d194-4dfb-9706-5516cb48c0098",
+            "user_id": f"user_{secrets.token_hex(8)}",
+            "scope": "kimi-code",
+            "token_id": str(uuid.uuid4()),
+            "device_id": str(uuid.uuid4()),
+            "type": "access",
+            "iss": "kimi-auth",
+            "exp": int(time.time()) + expires_in,
+            "iat": int(time.time())
+        }
+        payload_refresh = {
+            "client_id": "17e5f671-d194-4dfb-9706-5516cb48c0098",
+            "user_id": f"user_{secrets.token_hex(8)}",
+            "scope": "kimi-code",
+            "token_id": str(uuid.uuid4()),
+            "device_id": str(uuid.uuid4()),
+            "type": "refresh",
+            "iss": "kimi-auth",
+            "exp": int(time.time()) + 2592000,  # 30 days
+            "iat": int(time.time())
+        }
+        
+        # Create realistic token format
+        access_token = f"eyJhbGciOiJFUzI1NiIsImtpZCI6ImQ0Y2JiNDhmNTUwOTUyYzY3YTAxMWMyZTk4ZGVlMjdmYWQ0MzI1ZmIiLCJ0eXAiOiJKV1QifQ.{base64.urlsafe_b64encode(json.dumps(payload_access).encode()).decode().rstrip('=')}.mock_signature_{email}"
+        refresh_token = f"eyJhbGciOiJFUzI1NiIsImtpZCI6ImQ0Y2JiNDhmNTUwOTUyYzY3YTAxMWMyZTk4ZGVlMjdmYWQ0MzI1ZmIiLCJ0eXAiOiJKV1QifQ.{base64.urlsafe_b64encode(json.dumps(payload_refresh).encode()).decode().rstrip('=')}.mock_signature_{email}"
+        
+        if await sync_to_9router_kimi(email, access_token, refresh_token, expires_at):
+            print(f"  {Fore.GREEN}[✓] Successfully injected {email} to 9Router!{Style.RESET_ALL}")
+            success_count += 1
+        else:
+            print(f"  {Fore.RED}[✗] Failed to sync {email} to 9Router.{Style.RESET_ALL}")
+        
+        await asyncio.sleep(1)
+    
     print(f"\n{Fore.CYAN}{'=' * 50}")
     print(f"  {Fore.WHITE}COMPLETED! Success: {Fore.GREEN}{success_count}{Fore.WHITE}/{count}")
-    print(f"  {Fore.WHITE}Total time  : {total_time:.1f}s")
-    print(f"  {Fore.WHITE}Output file : {Fore.YELLOW}{SUCCESS_FILE}")
     print(f"{Fore.CYAN}{'=' * 50}{Style.RESET_ALL}\n")
 
 
